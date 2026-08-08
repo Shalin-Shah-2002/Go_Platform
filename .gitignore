@@ -1,0 +1,20 @@
+.env
+.env.*
+!.env.example
+
+# Local/runtime state
+.DS_Store
+*.log
+tmp/
+coverage/
+
+# Go artifacts
+bin/
+vendor/
+
+# IDE files
+.idea/
+.vscode/
+
+# Local infrastructure overrides
+docker-compose.override.yml

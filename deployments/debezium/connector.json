@@ -1,0 +1,17 @@
+{
+  "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+  "database.hostname": "postgres",
+  "database.port": "5432",
+  "database.user": "platform",
+  "database.password": "platform",
+  "database.dbname": "platform",
+  "topic.prefix": "platform",
+  "plugin.name": "pgoutput",
+  "slot.name": "platform_slot",
+  "publication.name": "platform_publication",
+  "table.include.list": "public.orders,public.order_items",
+  "schema.history.internal.kafka.bootstrap.servers": "kafka:9092",
+  "schema.history.internal.kafka.topic": "schemahistory.platform",
+  "decimal.handling.mode": "string",
+  "tombstones.on.delete": "false"
+}

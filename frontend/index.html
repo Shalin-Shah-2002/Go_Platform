@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b1018">
+  <title>Pulseboard | Real-time order pipeline</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Pulseboard home">
+        <span class="brand-mark"><i></i><i></i><i></i></span>
+        <span>pulse<span class="brand-accent">board</span></span>
+      </a>
+      <div class="topbar-meta">
+        <span class="live-dot"></span>
+        <span>LOCAL PIPELINE</span>
+        <span class="mono" id="clock">--:--:--</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">REAL-TIME DATA INTEGRATION</p>
+          <h1>See every order<br><em>move.</em></h1>
+          <p class="hero-copy">Create an order and watch it travel from PostgreSQL through Debezium and Kafka.</p>
+        </div>
+        <div class="hero-badge">
+          <span class="badge-line"></span>
+          <span>CDC MONITOR</span>
+          <strong>01</strong>
+        </div>
+      </section>
+
+      <section class="status-grid" aria-label="Pipeline status">
+        <article class="status-card">
+          <div class="status-heading"><span class="service-icon db">DB</span><span class="status-label">ORDER SERVICE</span><span class="status-pill" id="order-status">CHECKING</span></div>
+          <strong class="status-value" id="order-status-detail">Connecting</strong>
+          <div class="status-foot"><span>REST / 8080</span><span class="pulse-bar"><i></i><i></i><i></i><i></i><i></i></span></div>
+        </article>
+        <article class="status-card">
+          <div class="status-heading"><span class="service-icon stream">◈</span><span class="status-label">DEBEZIUM CONNECT</span><span class="status-pill" id="cdc-status">CHECKING</span></div>
+          <strong class="status-value" id="cdc-status-detail">Checking connector</strong>
+          <div class="status-foot"><span>CDC / 8083</span><span class="pulse-bar warm"><i></i><i></i><i></i><i></i><i></i></span></div>
+        </article>
+        <article class="status-card accent-card">
+          <div class="status-heading"><span class="service-icon kafka">K</span><span class="status-label">EVENT BUS</span><span class="status-pill neutral">READY</span></div>
+          <strong class="status-value">orders.events</strong>
+          <div class="status-foot"><span>KAFKA / 9094</span><span class="partition"><b>1</b> PARTITION</span></div>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <div class="panel create-panel">
+          <div class="panel-header"><div><p class="eyebrow">01 / PRODUCE</p><h2>Create an order</h2></div><span class="panel-code">POST /orders</span></div>
+          <form id="order-form">
+            <label>Customer ID<input id="customer-id" name="customer_id" value="cust-101" required></label>
+            <div class="items-header"><span>Line items</span><button type="button" class="text-button" id="add-item">+ Add item</button></div>
+            <div id="items">
+              <div class="item-row">
+                <input name="product_id" value="prod-1" placeholder="Product ID" required>
+                <input name="quantity" value="2" type="number" min="1" placeholder="Qty" required>
+                <input name="unit_price_cents" value="1500" type="number" min="0" placeholder="Price (cents)" required>
+                <button type="button" class="remove-item" aria-label="Remove item">×</button>
+              </div>
+            </div>
+            <div class="form-footer"><span class="helper">Prices are entered in cents</span><button class="primary-button" id="submit-order" type="submit"><span>Create order</span><b>↗</b></button></div>
+          </form>
+          <div class="result" id="result" hidden></div>
+        </div>
+
+        <div class="panel flow-panel">
+          <div class="panel-header"><div><p class="eyebrow">02 / OBSERVE</p><h2>Pipeline flow</h2></div><button class="refresh-button" id="refresh" title="Refresh status">↻</button></div>
+          <div class="flow-list">
+            <div class="flow-step done"><span class="flow-number">01</span><div><strong>REST request</strong><small>Order Service accepts the payload</small></div><span class="flow-check">✓</span></div>
+            <div class="flow-connector"><i></i></div>
+            <div class="flow-step" id="postgres-step"><span class="flow-number">02</span><div><strong>PostgreSQL insert</strong><small>Durable source of truth</small></div><span class="flow-state">WAITING</span></div>
+            <div class="flow-connector"><i></i></div>
+            <div class="flow-step" id="debezium-step"><span class="flow-number">03</span><div><strong>Debezium CDC</strong><small>Reads the PostgreSQL WAL</small></div><span class="flow-state">WAITING</span></div>
+            <div class="flow-connector"><i></i></div>
+            <div class="flow-step" id="kafka-step"><span class="flow-number">04</span><div><strong>Kafka event</strong><small>platform.public.orders</small></div><span class="flow-state">WAITING</span></div>
+          </div>
+          <div class="topic-box"><span class="topic-dot"></span><span>Watching topic</span><code>platform.public.orders</code></div>
+        </div>
+      </section>
+
+      <section class="event-panel panel">
+        <div class="panel-header"><div><p class="eyebrow">03 / LAST SIGNAL</p><h2>Latest order event</h2></div><span class="event-source">DEBEZIUM ENVELOPE</span></div>
+        <div class="event-empty" id="event-empty"><span class="empty-icon">⌁</span><div><strong>No event captured yet</strong><p>Create an order above to inspect its database change.</p></div></div>
+        <pre class="event-json" id="event-json" hidden></pre>
+      </section>
+    </main>
+    <footer><span>Pulseboard / local observability console</span><span class="mono">GO · POSTGRES · DEBEZIUM · KAFKA</span></footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

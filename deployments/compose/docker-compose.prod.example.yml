@@ -1,0 +1,48 @@
+services:
+  order-service:
+    image: registry.example.com/realtime/order-service:${IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${ORDER_DATABASE_URL}
+      KAFKA_BROKERS: ${KAFKA_BROKERS}
+      ORDER_SERVICE_PORT: 8080
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+
+  inventory-service:
+    image: registry.example.com/realtime/worker-service:${IMAGE_TAG}
+    entrypoint: ["/worker-service"]
+    restart: unless-stopped
+    environment:
+      WORKER_ROLE: inventory
+      DATABASE_URL: ${INVENTORY_DATABASE_URL}
+      KAFKA_BROKERS: ${KAFKA_BROKERS}
+      REDIS_ADDR: ${REDIS_ADDR}
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+
+  notification-service:
+    image: registry.example.com/realtime/worker-service:${IMAGE_TAG}
+    entrypoint: ["/worker-service"]
+    restart: unless-stopped
+    environment:
+      WORKER_ROLE: notification
+      DATABASE_URL: ${NOTIFICATION_DATABASE_URL}
+      KAFKA_BROKERS: ${KAFKA_BROKERS}
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+
+  analytics-service:
+    image: registry.example.com/realtime/worker-service:${IMAGE_TAG}
+    entrypoint: ["/worker-service"]
+    restart: unless-stopped
+    environment:
+      WORKER_ROLE: analytics
+      DATABASE_URL: ${ANALYTICS_DATABASE_URL}
+      KAFKA_BROKERS: ${KAFKA_BROKERS}
+    read_only: true
+    security_opt:
+      - no-new-privileges:true

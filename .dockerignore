@@ -1,0 +1,9 @@
+.git
+.gitignore
+.env
+README.md
+docs/
+coverage/
+tmp/
+*.log
+frontend/node_modules/
