@@ -195,7 +195,7 @@ Each consumer service uses a **separate Kafka consumer group** so every service 
 **Why:** Reproducible development environment. All infrastructure (PostgreSQL, Kafka, Debezium, Redis) and application services run in containers with private networking. No local installation needed.
 
 **How used:**
-- 10 containers/services: PostgreSQL, Kafka, Kafka topic initializer, Debezium, Redis, Order Service, Inventory, Notification, Analytics, Dashboard
+- 11 containers/services: PostgreSQL, Kafka, Kafka topic initializer, Debezium, Debezium connector initializer, Redis, Order Service, Inventory, Notification, Analytics, Dashboard
 - Dockerfile with multi-stage build
 - Production Compose example with `read_only`, `no-new-privileges`, and image-based deployment
 
@@ -618,7 +618,7 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-This builds the Go binaries and starts all 10 containers/services. The short-lived `kafka-init` container creates the required Kafka topics and then exits successfully.
+This builds the Go binaries and starts all 11 containers/services. The short-lived `kafka-init` container creates the required Kafka topics, and `debezium-init` registers the source connector; both exit successfully after initialization.
 
 ### 2. Register the Debezium connector
 
@@ -634,7 +634,7 @@ curl -X PUT http://localhost:8083/connectors/platform-postgres/config \
 docker compose ps
 ```
 
-Expected output: the long-running services are "Up" or "Up (healthy)"; `kafka-init` is expected to be "Exited (0)" after topic creation.
+Expected output: the long-running services are "Up" or "Up (healthy)"; `kafka-init` and `debezium-init` are expected to be "Exited (0)" after initialization.
 
 ```bash
 curl http://localhost:3000/api/health

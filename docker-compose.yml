@@ -90,6 +90,24 @@ services:
       OFFSET_STORAGE_PARTITIONS: 1
       STATUS_STORAGE_PARTITIONS: 1
 
+  debezium-init:
+    image: curlimages/curl:8.10.1
+    depends_on:
+      debezium:
+        condition: service_started
+    volumes:
+      - ./deployments/debezium/connector.json:/connector.json:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        until curl -fsS http://debezium:8083/connectors >/dev/null; do
+          sleep 2
+        done
+        curl -fsS -X PUT http://debezium:8083/connectors/platform-postgres/config \
+          -H 'Content-Type: application/json' \
+          --data @/connector.json
+
   redis:
     image: redis:7-alpine
     ports:
@@ -124,7 +142,7 @@ services:
     image: nginx:1.27-alpine
     depends_on:
       - order-service
-      - debezium
+      - debezium-init
     ports:
       - "3000:80"
     volumes:

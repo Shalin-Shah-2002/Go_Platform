@@ -30,6 +30,7 @@ The stack starts:
 | `kafka` | Event broker | `9094` from host, `9092` inside Docker |
 | `kafka-init` | Creates topics once | exits `0` |
 | `debezium` | PostgreSQL CDC connector | `8083` |
+| `debezium-init` | Registers the PostgreSQL source connector | exits `0` |
 | `redis` | Inventory cache | `6379` |
 | `inventory-service` | Inventory consumer | internal |
 | `notification-service` | Notification consumer | internal |
@@ -41,11 +42,17 @@ Check the containers:
 docker compose ps
 ```
 
-`kafka-init` should show `Exited (0)`. Long-running services should show `Up` or `Up (healthy)`.
+`kafka-init` and `debezium-init` should show `Exited (0)`. Long-running services should show `Up` or `Up (healthy)`.
 
 ## Register Debezium
 
-Debezium Connect is running before its source connector is registered. Register the connector once:
+The `debezium-init` container registers the source connector automatically. Inspect its output:
+
+```bash
+docker compose logs debezium-init
+```
+
+To register or update it manually:
 
 ```bash
 curl -fsS -X PUT http://localhost:8083/connectors/platform-postgres/config \
@@ -68,7 +75,7 @@ Expected important values:
 }
 ```
 
-If the connector is missing after recreating Kafka, register it again. Its configuration is stored in Kafka Connect's internal topic.
+If the connector is missing after recreating Kafka, restart `debezium-init` or register it manually. Its configuration is stored in Kafka Connect's internal topic.
 
 ## Use the Dashboard
 
@@ -272,6 +279,7 @@ CDC and Kafka:
 Kafka Connect is running but the source connector has not been registered:
 
 ```bash
+docker compose logs debezium-init
 curl -X PUT http://localhost:8083/connectors/platform-postgres/config \
   -H 'Content-Type: application/json' \
   --data @deployments/debezium/connector.json
@@ -282,12 +290,15 @@ curl -X PUT http://localhost:8083/connectors/platform-postgres/config \
 Check the logs:
 
 ```bash
+docker compose logs --tail=100 debezium
 ```
 
-Check that Kafka initialization completed:
+Check that Kafka and Debezium initialization completed:
 
 ```bash
+docker compose ps kafka kafka-init debezium debezium-init
 docker compose logs kafka-init
+docker compose logs debezium-init
 ```
 
 The internal Connect topics must exist and use `cleanup.policy=compact`. The current `kafka-init` service creates and configures them.
@@ -310,6 +321,7 @@ Then create a new order. The dashboard observer starts at the latest offset, so 
 The init SQL runs automatically only for a new PostgreSQL volume. Apply it to an existing development volume:
 
 ```bash
+docker compose exec -T postgres psql -U platform -d platform < migrations/001_init.sql
 ```
 
 ### Port already in use
@@ -332,11 +344,14 @@ Each worker reads `platform.public.orders`, uses a separate consumer group, and 
 Stop containers but keep data:
 
 ```bash
+docker compose down
 ```
 
 Delete local PostgreSQL, Kafka, and Redis volumes:
 
 ```bash
+docker compose down -v
+docker compose up --build -d
 ```
 
 This is destructive. Never use `down -v` against a production environment.
