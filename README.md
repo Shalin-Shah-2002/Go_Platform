@@ -2,6 +2,13 @@
 
 A production-oriented event-processing platform that captures database changes in real time, streams them through Apache Kafka, and processes those events through independent Go microservices with Redis caching and a live operator dashboard.
 
+> **Quick summary** — full walkthrough in [docs/request-flow-explained.md](docs/request-flow-explained.md).
+
+- **One request's journey:** Browser → Nginx → Order Service → PostgreSQL → Debezium (CDC watches the WAL) → Kafka → 3 worker services (Inventory/Notification/Analytics) → PostgreSQL + Redis → dashboard.
+- **Three separate things:** the **code** (`cmd/`, `internal/`), **your servers** (order-service + 3 workers + Nginx), and the **CDC service** (Debezium — a separate Java server, not your code, configured by `connector.json`).
+- **What's in the repo:** `cmd/` (entry points), `internal/` (config, events, order domain, platform adapters, worker logic), `migrations/` (schema), `frontend/` (dashboard), `deployments/` (Debezium + production Compose), `docs/` (guides).
+- **Key mechanics:** one DB transaction per order (`orders` + `order_items`), idempotency via `processed_events` (`ON CONFLICT DO NOTHING`), offsets committed only after success, Redis TTL cache for inventory, Kafka topics created by the `kafka-init` container (not in code), DB pool pinged at startup (`WaitForPostgres`) and on `/health`.
+
 ---
 
 ## Table of Contents
